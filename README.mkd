@@ -1,0 +1,14 @@
+# CV Parsing Task
+
+## Overview
+This project aims to extract [Education] and [Employment] histories from CVs.
+
+## Folder Structure
+```
+/
+|----- code/
+|----- data/
+|----- cv/
+       |----- raw
+       |----- txt
+```

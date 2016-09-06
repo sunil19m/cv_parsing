@@ -1,0 +1,14 @@
+---
+education:
+  + Education
+  + Degree
+employment:
+  + Employment
+  + Position
+  + Appointment
+other:
+  + Research Paper
+  + Publication
+  + Working Paper
+  + Research Interest
+---
