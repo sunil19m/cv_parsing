@@ -1,6 +1,7 @@
 import os
 from glob import glob
 from BeautifulSoup import BeautifulSoup
+from BeautifulSoup import NavigableString
 import sys
 import re
 import json
@@ -26,23 +27,33 @@ def fetch_bold_header_contants(html, actual_file_name):
     soup = BeautifulSoup(html)
     bold = soup.find("b")
     if bold:
+        old_bold_text = bold.text
         inside_bold_string = ''
-        bold_heading = str(utility.clean_text_values(bold.text)).strip()
-        bold = bold.next
-        bold = bold.next
+        bold_heading = str(utility.clean_text_values(old_bold_text)).strip()
+        try:
+            while(old_bold_text == bold.text):
+                bold = bold.next
+        except Exception:
+            pass
         while(bold):
-            cur_bold = BeautifulSoup(str(bold))      
+            cur_bold = BeautifulSoup(str(bold))
+            old_bold_text = cur_bold.text   
             if cur_bold.find("b"):
-                result[bold_heading] = str(inside_bold_string).strip()
+                old_bold_text = bold.text
+                result[bold_heading] = str(utility.clean_text_values(inside_bold_string)).strip()
                 inside_bold_string = ''
                 bold_heading = str(utility.clean_text_values(cur_bold.text)).strip()
-                bold = bold.next
-                bold = bold.next
-                continue
-            inside_bold_string = str(inside_bold_string).strip() + "|" +\
+                
+            else:
+                inside_bold_string = str(utility.clean_text_values(inside_bold_string)).strip() + "|" +\
                 str(utility.clean_text_values(cur_bold.text)).strip()
-            bold = bold.next
-        result[bold_heading] = str(inside_bold_string).strip()
+            if bold:
+                bold = bold.next
+                while (old_bold_text == bold):
+                    bold = bold.next
+            else:
+                break
+        result[bold_heading] = str(utility.clean_text_values(inside_bold_string)).strip()
         result["file_name"] = actual_file_name
         return result
     else:
@@ -87,7 +98,6 @@ def main():
     #available_bold_headers = list()
 
     pdf_files = utility.fetch_pdf_files(PDF_FILE_PATH)
-
     inital_count = 0
     final_count = (len(pdf_files) + 10)
     window = 100
@@ -113,6 +123,7 @@ def main():
                 education = extract_education_info(parsed_bold, file_name)
                 if education:
                     education_list.append(education)
+                    categorize_education_info(education)
                 else:
                     education_error_list.append(file_name)      
             except Exception, e:
@@ -125,9 +136,10 @@ def main():
             +str(inital_count)+'_' + str(inital_count + 100)+'.txt')
         if education_list:
             utility.write_json_to_text_file(education_file_path, education_list)
-            categorize_education_info(education_file_path)
+            #categorize_education_info(education_file_path)
         inital_count = inital_count + 101
-
+        
+        
     utility.write_json_to_text_file(UNMATCHED_EDUCATION_BOLD, education_error_list)
     utility.write_json_to_text_file(NO_BOLD_CV_FILE_PATH, no_bold_cv_files)
     utility.write_json_to_text_file(ERROR_FILE_PATH, error_files)

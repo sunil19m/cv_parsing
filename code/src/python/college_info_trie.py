@@ -16,6 +16,24 @@ import sys
 import codecs
 from operator import itemgetter
 
+
+MORE_COLLEGES = [
+    {"country": "NA", "name": "UNIVERSITY OF ST. GALLEN"},
+    {"country": "NA", "name": "STANFORD GRADUATE SCHOOL OF BUSINESS"},
+    {"country": "NA", "name": "LONDON SCHOOL OF ECONOMICS"},
+    {"country": "NA", "name": "M.I.T."},
+    {"country": "NA", "name": "MIT"},
+    {"country": "NA", "name": "U.L.B"},
+    {"country": "NA", "name": "columbia university"},
+    {"country": "NA", "name": "Moscow Institute for Physics and Engineering"},
+    {"country": "NA", "name": "Haas School of Business"},
+    {"country": "NA", "name": "dauphine"},
+    {"country": "NA", "name": "universidad simon bolivar"}
+]
+
+
+
+
 print TRIE_PATH
 if not os.path.exists(TRIE_PATH):
     os.makedirs(TRIE_PATH)
@@ -44,6 +62,8 @@ def get_college_information(college_info_path):
    
         #with open(college_info_path, "r") as fp:
         college_info = json.load(fp)
+        college_info.extend(MORE_COLLEGES)
+
         college_id_name_map = dict()
         for id, college in enumerate(college_info):
             lower_case_college = college['name'].lower()
@@ -180,16 +200,40 @@ def get_college_names(search_words):
 
 def possible_college_search(college_name):
     possible_college_rank = list()
-    college_name = unicode(college_name)
-    
-    (college_dict, ranked_college_result) = get_college_names(college_name.upper())
-    for college_id, rank in ranked_college_result.items():
-        if rank < 0.8:
-            break
-        possible_college_rank.append([college_dict[college_id], rank])
+    college_split = [unicode(str(x).strip().upper()) for x in college_name.split(" ")]
+    if len(college_split) > 20:
+        raise Exception("Too large to call recursive function")
 
-    if possible_college_rank:
-        for val in sorted(possible_college_rank, key=itemgetter(1),
-                          reverse=True)[:1]:
-            return val[0]
-    return None
+    possible_words = rec_search_by_removal_word(college_split, list()) 
+    
+    result_string = list()
+    for word in possible_words:
+        string_input = " ".join(word)
+        result_string.append(string_input)
+    unique_set = list(set(result_string))
+    unique_set.sort(key=len, reverse=True)
+    
+    for words in unique_set:
+        search_result = search_by_removing_words(words)
+        if search_result:
+            return search_result[0]
+
+def rec_search_by_removal_word(search_word, possible_search_words):
+    if len(search_word) == 0:
+        return possible_search_words
+    else:
+        if search_word:
+            possible_search_words.append(search_word)
+        rec_search_by_removal_word(list(search_word[:-1]), possible_search_words)
+        rec_search_by_removal_word(list(search_word[1:]), possible_search_words)
+        rec_search_by_removal_word(list(search_word[1:-1]), possible_search_words)
+        return possible_search_words
+
+
+def search_by_removing_words(search_word):
+    search_word = ''.join(search_word)
+    (college_dict, ranked_college_result) = get_college_names(search_word.upper())
+    for college_id, rank in ranked_college_result.items():
+        if rank < 0.85:
+            break
+        return [college_dict[college_id], rank]

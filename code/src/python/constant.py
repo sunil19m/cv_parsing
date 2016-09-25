@@ -4,6 +4,7 @@ TOP_DIRECTORY = "/media/sunil/Others"
 
 DATA_DIRECTORY = TOP_DIRECTORY + "/cv_parsing/data"
 PDF_FILE_PATH = DATA_DIRECTORY + "/NewCV/CV/"
+#PDF_FILE_PATH = DATA_DIRECTORY + "/CV_trail/"
 
 
 # Output directory path

@@ -48,7 +48,7 @@ class Utility(object):
         return result
 
     def convert_pdf_to_html(self, pdf_file):
-        os.system('pdftohtml -f 1 -l 1 -q '+ pdf_file)
+        os.system('pdftohtml -f 1 -l 2 -q '+ pdf_file)
 
     def remove_html_png_jpg_create_files(self, file_path):
         os.system('\\rm '+ file_path +'*.png')
@@ -57,9 +57,16 @@ class Utility(object):
 
     def clean_text_values(self, text_value):
         text_value = re.sub('&#160;', ' ', text_value, re.MULTILINE)
+        text_value = re.sub('#160;', ' ', text_value, re.MULTILINE)
+        text_value = re.sub('160;', ' ', text_value, re.MULTILINE)
+        text_value = re.sub('&#', ' ', text_value, re.MULTILINE)
+        text_value = re.sub('&;', ' ', text_value, re.MULTILINE)
         text_value = re.sub(r"\\\w+", " ", text_value, re.MULTILINE)
         text_value = re.sub('[^a-zA-Z0-9-_*.@(), |]', ' ', text_value, re.MULTILINE)
-        return text_value
+        text_value = re.sub('\(', ',', text_value, re.MULTILINE)
+        text_value = re.sub('\)', ',', text_value, re.MULTILINE)
+        text_value = re.sub('&#160;', ' ', text_value, re.MULTILINE)
+        return " ".join(text_value.split())
 
     def write_json_to_text_file(self, file_path, json_data):
         if json_data:
