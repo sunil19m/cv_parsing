@@ -26,13 +26,11 @@ class Utility(object):
         """
         utility.convert_pdf_to_txt(PDF_FILE, page_num=[0])
         """
-        with codecs.open(path, 'rb', encoding="cp1252") as fp:
-            reload(sys)  
-            sys.setdefaultencoding('latin-1')
+        with codecs.open(path, 'rb', encoding="latin-1") as fp:
             rsrcmgr = PDFResourceManager()
             str_buffer = StringIO()
             laparams = LAParams()
-            device = TextConverter(rsrcmgr, str_buffer, codec='cp1252', laparams=laparams)
+            device = TextConverter(rsrcmgr, str_buffer, codec='latin-1', laparams=laparams)
             interpreter = PDFPageInterpreter(rsrcmgr, device)
             for page in PDFPage.get_pages(fp, pagenos=page_num, maxpages=max_pages,
                                           password="",caching=True, check_extractable=True):
@@ -56,30 +54,38 @@ class Utility(object):
         os.system('\\rm '+ file_path +'*.html')
 
     def clean_text_values(self, text_value):
+        text_value = re.sub('&amp;', '&', text_value, re.MULTILINE)
         text_value = re.sub('&#160;', ' ', text_value, re.MULTILINE)
         text_value = re.sub('#160;', ' ', text_value, re.MULTILINE)
         text_value = re.sub('160;', ' ', text_value, re.MULTILINE)
         text_value = re.sub('&#', ' ', text_value, re.MULTILINE)
-        text_value = re.sub('&;', ' ', text_value, re.MULTILINE)
+        
         text_value = re.sub(r"\\\w+", " ", text_value, re.MULTILINE)
-        text_value = re.sub('[^a-zA-Z0-9-_*.@(), |]', ' ', text_value, re.MULTILINE)
+        text_value = re.sub('[^a-zA-Z0-9-_*.@(),& |]', ' ', text_value, re.MULTILINE)
         text_value = re.sub('\(', ',', text_value, re.MULTILINE)
         text_value = re.sub('\)', ',', text_value, re.MULTILINE)
         text_value = re.sub('&#160;', ' ', text_value, re.MULTILINE)
         return " ".join(text_value.split())
 
     def write_json_to_text_file(self, file_path, json_data):
-        if json_data:
-            with codecs.open(file_path, 'w', encoding="cp1252") as fp:
-                json.dump(json_data, fp)
-                fp.close()
+        try:
+            if json_data:
+                with codecs.open(file_path, 'w', encoding="latin-1") as fp:
+                    json.dump(json_data, fp)
+                    fp.close()
+        except:
+            print file_path
+            
 
     def write_to_text_file(self, file_path, data):
         if data:
-            with codecs.open(file_path, 'a', encoding="cp1252") as fp:
+            with codecs.open(file_path, 'a', encoding="latin-1") as fp:
                 fp.write(data)
                 fp.close()
 
     def read_from_json(self, file_path):
-        with codecs.open(file_path, 'r', encoding="cp1252") as fp:
+        with codecs.open(file_path, 'r', encoding="latin-1") as fp:
             return json.load(fp)
+
+    def convert_pdf_to_text(self, pdf_file):
+        os.system('pdftotext -f 1 -l 2 -q '+ pdf_file)

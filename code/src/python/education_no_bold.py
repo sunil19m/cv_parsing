@@ -28,19 +28,24 @@ def remove_noise_words(input_string):
     return ' '.join(new_input_string)
     """
 
-def add_to_row(row_data, column_data, found_category, file_name, education_content):
+def add_to_row(row_data, column_data, found_category, file_name, education_content, row_count_pdf):
     #print "&&&&&&&&&&&&"
     #print column_data
     column_data['file_name'] = file_name
     column_data['education_content'] = education_content
-    column_data['logic_code'] = 1
-    row_data.append(dict(column_data))
+    column_data['logic_code'] = 2
+
+    # Dont add the row if degree is not available
+    if (column_data['degree']):
+        row_data.append(dict(column_data))
+        row_count_pdf = row_count_pdf + 1
+
     column_data = {'start_year': None, 'end_year': None, 'degree': None,\
-                   'cv_college': None, 'matched_college': None, 'college_line': None, 'logic_code':1}
+                   'cv_college': None, 'matched_college': None, 'logic_code':2}
     found_category['found_college'] = False
     found_category['found_year'] = False  
     found_category['found_degree'] = False
-    return row_data, column_data, found_category
+    return row_data, column_data, found_category, row_count_pdf
 
 
 ALL_DEGREES = [re.escape(x) for x in DEGREE_META_DATA]
@@ -177,11 +182,11 @@ def check_year_degree_clg(input_string):
         order_parse.append("found_college")
 
     
-    ##print order_parse, result
+    #print order_parse, result
     return (order_parse, result)
 
 def check_learn_order(learn_order, found_category, category, input_string):
-    ##print learn_order, found_category, category, input_string
+    #print learn_order, found_category, category, input_string
     rank = learn_order[category]
     for key, value in learn_order.iteritems():
         if value < rank:
@@ -194,7 +199,7 @@ def education_parsing(word_list, file_name, education_content):
     education_content_db = education_content[:7000]
 
     column = {'start_year': None, 'end_year': None, 'degree': None,\
-              'cv_college': None, 'matched_college': None, 'college_line': None, 'logic_code':1}
+              'cv_college': None, 'matched_college': None, 'logic_code':2}
     row = list()
     found_category = {'found_college': False, 'found_year': False, 'found_degree': False}
 
@@ -202,6 +207,8 @@ def education_parsing(word_list, file_name, education_content):
     
     learn_order = dict()
     count = 0
+    num_rows = 0
+    found_min_rows = False
     for word in word_list:    
         input_string = str(word.strip()).lower()
         original_input_string = input_string
@@ -215,13 +222,14 @@ def education_parsing(word_list, file_name, education_content):
         end = None
         degree = None
         (order_category, year_degree_clg_result) = check_year_degree_clg(input_string)
+        
         for idx, val in enumerate(order_category):
             if val == "found_year":
                 start = year_degree_clg_result["start"]
                 end = year_degree_clg_result["end"]
 
                 if found_category['found_year']:  
-                    row, column, found_category = add_to_row(row, column, found_category, file_name, education_content_db)
+                    row, column, found_category, num_rows = add_to_row(row, column, found_category, file_name, education_content_db, num_rows)
                 if 'found_year' not in learn_order:
                     count = count + 1
                     learn_order['found_year'] = count
@@ -238,7 +246,7 @@ def education_parsing(word_list, file_name, education_content):
             elif val == "found_degree":
                 degree = year_degree_clg_result["degree"]
                 if found_category['found_degree']:
-                    row, column, found_category = add_to_row(row, column, found_category, file_name, education_content_db)
+                    row, column, found_category, num_rows = add_to_row(row, column, found_category, file_name, education_content_db, num_rows)
                 if 'found_degree' not in learn_order:
                     count = count + 1
                     learn_order['found_degree'] = count
@@ -252,8 +260,7 @@ def education_parsing(word_list, file_name, education_content):
                 # Check for college
                 matched_college = year_degree_clg_result["college"]
                 if found_category['found_college']:
-                    row, column, found_category = add_to_row(row, column, found_category, file_name, education_content_db)
-                    
+                    row, column, found_category, num_rows = add_to_row(row, column, found_category, file_name, education_content_db, num_rows)
                 if 'found_college' not in learn_order:
                     count = count + 1
                     learn_order['found_college'] = count
@@ -262,31 +269,24 @@ def education_parsing(word_list, file_name, education_content):
                                     
                 column['cv_college'] = original_input_string
                 column['matched_college'] = matched_college
-                column['college_line'] = word
                 found_category['found_college'] = True
-                for val in original_input_string.split(" "):
-                    input_string = input_string.replace(val, '')
         
-        #if not (found_college or found_year or found_degree):
-        if input_string:
-            unprocessed_string.append(input_string)
         #print column
         #print learn_order
         #print found_category
         #print "========================================="
-            
-    unprocessed = ' '.join(unprocessed_string)
-    if len(unprocessed) > 6000:
-        unprocessed = unprocessed[:6000]
-    for found, value in found_category.iteritems():
-        if value:
-            column['file_name'] = file_name
-            column['education_content'] = education_content_db
-            column['logic_code'] = 1
-            row.append(column)
+
+        if num_rows > 4:
+            found_min_rows = True
             break
-    unprocessed = [{'file_name': file_name, 'unprocessed': unprocessed}]
-    return (row, unprocessed)
+        #print num_rows
+            
+    if not found_min_rows:
+        for found, value in found_category.iteritems():
+            if value:
+                add_to_row(row, column, found_category, file_name, education_content_db, num_rows)
+                break
+    return row
 
 def convert_to_df(data_list):
     df = pd.DataFrame(data_list)
@@ -294,14 +294,10 @@ def convert_to_df(data_list):
     df_clean = df.where((pd.notnull(df)), 0)
     return df_clean
 
-def put_parse_data_to_db(forward_parse, reverse_parse,
-                         forward_unparsed, reverse_unparsed):
+def put_parse_data_to_db(forward_parse):
     dao = Dao()
     dao.insert_education_raw(forward_parse)
-    dao.insert_education_raw(reverse_parse)
-    dao.insert_education_unprocessed(forward_unparsed)
-    dao.insert_education_unprocessed(reverse_unparsed)
-
+    
 def compare_diff_of_forward_reverse_parse(forward_parse, reverse_parse):
     df = pd.concat([forward_parse, reverse_parse])
     df = df.reset_index(drop=True)
@@ -314,31 +310,24 @@ def categorize_education_info(cv):
     #education_info = utility.read_from_json(edu_json_path)
     education_error_files = list()
     forward_parse_result = list()
-    reverse_parse_result = list()
-    forward_unparsed = list()
-    reverse_unparsed = list()
     
     try:
         education_content = str(cv["education"])
         file_name = str(cv["file_name"])
         
         word_list = education_content.split("|")
-        (forward_processed, forward_unprocessed) = education_parsing(word_list, file_name, education_content)
+        forward_processed = education_parsing(word_list, file_name, education_content)
         if not forward_processed:
             raise Exception("No data parsed from education ********************")
         
         forward_parse_result.extend(forward_processed)
-        forward_unparsed.extend(forward_unprocessed)
+        
         
     except Exception, e:
         print traceback.print_exc()
         utility.write_to_text_file(FAILED_EDUCATION_JSON_PARSE, cv["file_name"]+"','" )
     
     forward_parse = convert_to_df(forward_parse_result)
-    reverse_parse = convert_to_df(reverse_parse_result)
-    forward_unparsed = convert_to_df(forward_unparsed)
-    reverse_unparsed = convert_to_df(reverse_unparsed)
-    put_parse_data_to_db(forward_parse, reverse_parse, forward_unparsed, reverse_unparsed)
+    put_parse_data_to_db(forward_parse)
     
     #compare_diff_of_forward_reverse_parse(forward_parse, reverse_parse)
-

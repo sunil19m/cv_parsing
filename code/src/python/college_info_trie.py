@@ -2,7 +2,8 @@
 from trie.daTrie import DaTrie
 from trie.trie_utility import TrieUtility
 from constant import (TRIE_PATH,
-                      COLLEGE_INFO_PATH)
+                      COLLEGE_INFO_PATH,
+                      MORE_COLLEGES)
  
 
 from trie.ranking_search_result import FrequencySearchRanking
@@ -15,23 +16,7 @@ import json
 import sys
 import codecs
 from operator import itemgetter
-
-
-MORE_COLLEGES = [
-    {"country": "NA", "name": "UNIVERSITY OF ST. GALLEN"},
-    {"country": "NA", "name": "STANFORD GRADUATE SCHOOL OF BUSINESS"},
-    {"country": "NA", "name": "LONDON SCHOOL OF ECONOMICS"},
-    {"country": "NA", "name": "M.I.T."},
-    {"country": "NA", "name": "MIT"},
-    {"country": "NA", "name": "U.L.B"},
-    {"country": "NA", "name": "columbia university"},
-    {"country": "NA", "name": "Moscow Institute for Physics and Engineering"},
-    {"country": "NA", "name": "Haas School of Business"},
-    {"country": "NA", "name": "dauphine"},
-    {"country": "NA", "name": "universidad simon bolivar"}
-]
-
-
+import re
 
 
 print TRIE_PATH
@@ -56,9 +41,9 @@ def memoize(f):
 @memoize
 def get_college_information(college_info_path):
     college_id_name_map = dict()
-    with codecs.open(college_info_path, 'r', encoding="cp1252") as fp:
+    with codecs.open(college_info_path, 'r', encoding="latin-1") as fp:
         reload(sys)  
-        sys.setdefaultencoding('cp1252')
+        sys.setdefaultencoding('latin-1')
    
         #with open(college_info_path, "r") as fp:
         college_info = json.load(fp)
@@ -155,7 +140,6 @@ def get_college_names(search_words):
 
     trie_util = TrieUtility()
     search_trie_results = trie_util.search_from_trie(trie_obj, search_words)
-
     #
     # Call the ranking alogrithm as per your requirement
     #
@@ -200,10 +184,33 @@ def get_college_names(search_words):
 
 def possible_college_search(college_name):
     possible_college_rank = list()
-    college_split = [unicode(str(x).strip().upper()) for x in college_name.split(" ")]
-    if len(college_split) > 20:
-        raise Exception("Too large to call recursive function")
+    sentence = list()
+    college_sp_split = college_name.split()
+    
+    
+    clg_list = list()
+    comma_split = college_name.split(",")
+    for word in comma_split:
+        wd_split = word.split()
+        for x in wd_split:
+            match = re.search("^[a-zA-Z]", x)
+            if match:
+                if len(x) > 1:
+                    clg_list.append(x)
+        if len(clg_list) > 15:
+            print ("Too large to call recursive function")
+            return None
+    sentence.append(clg_list)   
 
+    
+    for college_sentance in sentence:
+        college_split = [unicode(str(x).strip().upper()) for x in college_sentance]
+        result = call_recursion(college_split)
+        if result:
+            return result
+
+def call_recursion(college_split):
+    
     possible_words = rec_search_by_removal_word(college_split, list()) 
     
     result_string = list()
@@ -213,10 +220,17 @@ def possible_college_search(college_name):
     unique_set = list(set(result_string))
     unique_set.sort(key=len, reverse=True)
     
+    final_result = list()
     for words in unique_set:
         search_result = search_by_removing_words(words)
         if search_result:
-            return search_result[0]
+            final_result.append(search_result)
+
+    if final_result:
+        for val in sorted(final_result,
+                          key=itemgetter(1),
+                          reverse=True)[:1]:
+            return val[0]
 
 def rec_search_by_removal_word(search_word, possible_search_words):
     if len(search_word) == 0:
@@ -232,8 +246,10 @@ def rec_search_by_removal_word(search_word, possible_search_words):
 
 def search_by_removing_words(search_word):
     search_word = ''.join(search_word)
-    (college_dict, ranked_college_result) = get_college_names(search_word.upper())
+    search_word = re.sub('\W+\.',' ', search_word)
+    (college_dict, ranked_college_result) = get_college_names(search_word.upper().strip())
     for college_id, rank in ranked_college_result.items():
-        if rank < 0.85:
+        if rank < 0.9:
             break
         return [college_dict[college_id], rank]
+

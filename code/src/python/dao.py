@@ -32,8 +32,8 @@ class Dao(object):
     def insert_education_raw(self, df):
         query = """
             INSERT INTO cv_parsing.education_raw (file_name, start_year, end_year, degree,\
-                cv_college, matched_college, college_line, education_content) 
-            VALUES ('%s', %s, %s, '%s', '%s', '%s', '%s', '%s')
+                cv_college, matched_college, education_content, logic_code) 
+            VALUES ('%s', %s, %s, '%s', '%s', '%s', '%s', %s)
         """
         df = df.replace({"\'": '\\\''}, regex=True)
 
@@ -45,24 +45,11 @@ class Dao(object):
                             row[1]['degree'] if row[1]['degree'] else 'NULL',
                             row[1]['cv_college'] if row[1]['cv_college'] else 'NULL',
                             row[1]['matched_college'] if row[1]['matched_college'] else 'NULL',
-                            row[1]['college_line'] if row[1]['college_line'] else 'NULL',
                             row[1]['education_content'] if row[1]['education_content'] else 'NULL',
+                            row[1]['logic_code']
                         )
             cursor.execute(query_str.encode(sys.stdout.encoding, errors='replace'))
             self.cnx.commit()
             cursor.close()
         
-    def insert_education_unprocessed(self, df):
-        query = """
-            INSERT INTO cv_parsing.education_unprocessed (file_name, unprocessed) 
-            VALUES ('%s', '%s')
-        """
-        df = df.replace({"\'": '\\\''}, regex=True)
 
-        for row in df.iterrows():
-            cursor = self.cnx.cursor()
-            query_str = query %(row[1]['file_name'],
-                            row[1]['unprocessed'] if row[1]['unprocessed'] else 'NULL')
-            cursor.execute(query_str.encode(sys.stdout.encoding, errors='replace'))
-            self.cnx.commit()
-            cursor.close()

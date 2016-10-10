@@ -97,36 +97,6 @@ class EquivalenceSimilaritySearchRanking(object):
             top_equi_similar_dict[val[0]] = val[1]
         return top_equi_similar_dict
 
-    def convert_datab_to_key_value_str_dict(self, datab, normalize_unicode=False):
-        """
-            Given a datab with key, then converts to a dict with row values seperated by space.
-
-            m =[{'date':'20130823','ABS':100,'CMBS':2000},\
-                {'date':'20130824', 'ABS':150 , 'CMBS':300}]
-            tbl = Table.from_rows(m)
-            tbl = tbl.rekey('date')
-
-            print tbl
-            index       date    ABS CMBS
-            -----   ========   ---- ----
-            0   20130823   100 2000
-            1   20130824    150  300
-
-            print convert_datab_to_key_value_str_dict(tbl)
-            {'20130823': '20130823 100 2000', '20130824': '20130824 150 300'}
-        """
-
-        datab_row_details = dict()
-        all_columns = datab.schema.keys()
-        key_col = datab.schema.key_name[0]
-        for row in datab.itervalues():
-            value = str(row.__getattr__(all_columns[0]))
-            for col in all_columns[1:]:
-                value = value + ' ' + str(row.__getattr__(col))
-            key = str(row.__getattr__(key_col))
-            datab_row_details[key] = value
-        return datab_row_details
-
     def _letter_pairs(self, string_val):
         """
             Gives the list of pair of letter for a given string
