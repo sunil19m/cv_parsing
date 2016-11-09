@@ -3,8 +3,8 @@
 TOP_DIRECTORY = "/media/sunil/Others"
 
 DATA_DIRECTORY = TOP_DIRECTORY + "/cv_parsing/data"
-#PDF_FILE_PATH = DATA_DIRECTORY + "/CV/"
-PDF_FILE_PATH = DATA_DIRECTORY + "/Tested_Fine/"
+PDF_FILE_PATH = DATA_DIRECTORY + "/CV_New/"
+#PDF_FILE_PATH = DATA_DIRECTORY + "/Tested_Fine/"
 
 
 # Output directory path

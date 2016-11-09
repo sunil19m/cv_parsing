@@ -133,3 +133,24 @@ class Dao(object):
         cursor.execute(query_str.encode(sys.stdout.encoding, errors='replace'))
         self.cnx.commit()
         cursor.close()
+
+    def insert_prof_name_raw(self, dframe):
+        """
+        This function inserts the parsed work related information into the database
+        """
+        query = """
+            INSERT INTO cv_parsing.prof_name_raw (file_name, prof_name_intelligent, prof_name_simple,\
+                        prof_name_intelligent_line, prof_name_simple_line) 
+            VALUES ('%s', '%s', '%s', %s, %s)
+        """
+        dframe = dframe.replace({"\'": '\\\''}, regex=True)
+        for row in dframe.iterrows():
+            cursor = self.cnx.cursor()
+            query_str = query %(row[1]['file_name'],
+                                row[1]['prof_name_intelligent'] if row[1]['prof_name_intelligent'] else 'NULL',
+                                row[1]['prof_name_simple'] if row[1]['prof_name_simple'] else 'NULL',
+                                row[1]['prof_name_intelligent_line'] if row[1]['prof_name_intelligent_line'] else 0,
+                                row[1]['prof_name_simple_line'] if row[1]['prof_name_simple_line'] else 0)
+            cursor.execute(query_str.encode(sys.stdout.encoding, errors='replace'))
+            self.cnx.commit()
+            cursor.close()
